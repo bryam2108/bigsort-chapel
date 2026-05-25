@@ -19,8 +19,13 @@ Una página web moderna, completamente en español, con:
 - Benchmarks visuales y ejemplos listos para copiar
 - Instrucciones rápidas de instalación
 
-> **Nota para habilitar GitHub Pages:**
-> Ve a **Settings → Pages → Source → Branch: `main` + Folder: `/ (root)`** y guarda. La página se publicará automáticamente.
+> **Cómo publicar la web (una sola vez):**
+>
+> 1. Ve a **Settings → Pages**
+> 2. En **Source**, selecciona **GitHub Actions**
+> 3. Guarda.
+>
+> ¡Listo! A partir de ahora, cada vez que hagas push a `main`, la web se desplegará automáticamente gracias al workflow en `.github/workflows/deploy-pages.yml`.
 
 ---
 
@@ -154,6 +159,7 @@ Future external sort implementation will remove the "must fit in RAM" limitation
 ├── LICENSE
 ├── index.html         # ✨ Modern landing page (Spanish)
 ├── .nojekyll
+├── .github/workflows/deploy-pages.yml
 └── test.sh
 ```
 
