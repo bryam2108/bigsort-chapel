@@ -5,7 +5,24 @@
 
 **BigSort** is a high-performance parallel sorting demonstration written in [Chapel](https://chapel-lang.org/), showcasing how elegantly Chapel expresses parallel divide-and-conquer algorithms.
 
-It implements a **parallel merge sort** that scales across all available cores using `coforall` and recursive task parallelism — one of the classic examples of why Chapel makes HPC programming productive.
+---
+
+## 🌐 Sitio web moderno
+
+**¡Visita la nueva landing page oficial!**
+
+**[https://bryam2108.github.io/bigsort-chapel/](https://bryam2108.github.io/bigsort-chapel/)**
+
+Una página web moderna, completamente en español, con:
+- Demostración interactiva del algoritmo de ordenamiento
+- Animaciones fluidas y diseño de alto nivel
+- Benchmarks visuales y ejemplos listos para copiar
+- Instrucciones rápidas de instalación
+
+> **Nota para habilitar GitHub Pages:**
+> Ve a **Settings → Pages → Source → Branch: `main` + Folder: `/ (root)`** y guarda. La página se publicará automáticamente.
+
+---
 
 ## Features
 
@@ -135,6 +152,8 @@ Future external sort implementation will remove the "must fit in RAM" limitation
 ├── README.md        # This file
 ├── .gitignore
 ├── LICENSE
+├── index.html         # ✨ Modern landing page (Spanish)
+├── .nojekyll
 └── test.sh
 ```
 
