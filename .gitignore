@@ -1,0 +1,21 @@
+# Compiled Chapel binaries
+bigsort
+bigsort_real
+hello
+hello_real
+
+# Temporary files and runs
+tmp-bigsorter/
+*.tmp
+*.log
+
+# Editor / OS junk
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+
+# Large generated test data (optional - uncomment if you want to ignore)
+# *.big
+# data/
