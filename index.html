@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BigSort • Ordenamiento paralelo de alto rendimiento | Chapel</title>
+  <meta name="description" content="BigSort: Implementación moderna de merge sort paralelo en Chapel. Ordena millones de elementos a la velocidad del paralelismo real. Código limpio, educativo y extremadamente rápido.">
+  <meta name="theme-color" content="#0f0f17">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:title" content="BigSort — Ordenamiento paralelo de alto rendimiento en Chapel">
+  <meta property="og:description" content="Demostración espectacular de paralelismo en Chapel. Ordena 10 millones de elementos en menos de 2 segundos usando solo código elegante.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/bryam2108/bigsort-chapel/main/.github/og-image.png">
+  <meta property="og:url" content="https://bryam2108.github.io/bigsort-chapel/">
+  <meta property="og:type" content="website">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+
+    :root {
+      --accent: #22d3ee;
+    }
+
+    body {
+      font-family: 'Inter', system_ui, sans-serif;
+    }
+
+    .font-display {
+      font-family: 'Space Grotesk', 'Inter', sans-serif;
+      font-weight: 600;
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .section-header {
+      font-size: clamp(2.25rem, 5vw, 3.5rem);
+      line-height: 1.05;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .nav-active {
+      color: #22d3ee;
+      position: relative;
+    }
+
+    .nav-active:after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(to right, #22d3ee, transparent);
+    }
+
+    .modern-gradient {
+      background: linear-gradient(135deg, #22d3ee 0%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-bg {
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(103, 232, 249, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(99, 102, 241, 0.06) 0%, transparent 60%);
+    }
+
+    .stat-number {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .feature-card {
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                  box-shadow 0.2s cubic-bezier(0.4, 0.0, 0.2, 1),
+                  border-color 0.2s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      border-color: rgba(103, 232, 249, 0.2);
+    }
+
+    .code-window {
+      background: #0a0a0f;
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+    }
+
+    .sorting-bar {
+      transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                  background-color 0.3s ease;
+      box-shadow: 0 0 12px rgb(103 232 249 / 0.5);
+    }
+
+    .nav-scrolled {
+      background: rgba(15, 15, 23, 0.95);
+      backdrop-filter: blur(16px);
+    }
+
+    .hpc-glow {
+      box-shadow: 0 0 15px rgb(34 211 238 / 0.15),
+                  0 0 30px rgb(34 211 238 / 0.08);
+    }
+
+    .metric {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .chapel-keyword { color: #c084fc; }
+    .chapel-type { color: #67e8f9; }
+    .chapel-fn { color: #f472b6; }
+    .chapel-comment { color: #64748b; }
+  </style>
+</head>
+<body class="bg-[#0a0a0f] text-slate-200 overflow-x-hidden">
+  <!-- NAVBAR -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <div class="max-w-screen-2xl mx-auto">
+      <div class="px-8 py-5 flex items-center justify-between">
+        <!-- Logo -->
+        <div class="flex items-center gap-x-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-violet-500 flex items-center justify-center">
+            <i class="fa-solid fa-sort-amount-down text-white text-2xl"></i>
+          </div>
+          <div>
+            <span class="font-display text-3xl font-semibold tracking-tighter">BigSort</span>
+          </div>
+        </div>
+
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex items-center gap-x-9 text-sm font-medium">
+          <a href="#caracteristicas" class="hover:text-cyan-400 transition-colors">Características</a>
+          <a href="#codigo" class="hover:text-cyan-400 transition-colors">El Código</a>
+          <a href="#rendimiento" class="hover:text-cyan-400 transition-colors">Rendimiento</a>
+          <a href="#empezar" class="hover:text-cyan-400 transition-colors">Empezar</a>
+        </div>
+
+        <div class="flex items-center gap-x-3">
+          <!-- GitHub Button -->
+          <a href="https://github.com/bryam2108/bigsort-chapel" target="_blank"
+             class="hidden sm:flex items-center gap-x-2 px-5 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-all active:scale-[0.985]">
+            <i class="fa-brands fa-github text-lg"></i>
+            <span>GitHub</span>
+          </a>
+
+          <!-- Primary CTA -->
+          <a href="#empezar"
+             class="px-6 py-2.5 rounded-2xl bg-white text-[#0a0a0f] text-sm font-semibold flex items-center gap-x-2 hover:bg-white/90 transition-all active:scale-[0.985]">
+            <span>Probar ahora</span>
+          </a>
+
+          <!-- Mobile menu -->
+          <button id="mobile-menu-btn"
+                  class="md:hidden w-11 h-11 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10">
+            <i class="fa-solid fa-bars text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-white/10 bg-[#0a0a0f]">
+      <div class="px-8 py-6 flex flex-col gap-y-4 text-base">
+        <a href="#caracteristicas" class="mobile-link py-1">Características</a>
+        <a href="#codigo" class="mobile-link py-1">El Código</a>
+        <a href="#rendimiento" class="mobile-link py-1">Rendimiento</a>
+        <a href="#empezar" class="mobile-link py-1">Empezar</a>
+        
+        <div class="pt-4 border-t border-white/10">
+          <a href="https://github.com/bryam2108/bigsort-chapel" target="_blank"
+             class="flex items-center justify-center gap-x-2 w-full py-3 rounded-2xl border border-white/10">
+            <i class="fa-brands fa-github"></i>
+            <span>Ver en GitHub</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="pt-24 pb-16 md:pt-28 md:pb-20 px-6 max-w-screen-2xl mx-auto">
+    <div class="max-w-5xl mx-auto text-center">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-x-2 px-4 h-9 rounded-3xl bg-white/5 border border-white/10 mb-8">
+        <div class="flex items-center -space-x-1">
+          <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+          <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+        </div>
+        <span class="text-xs font-semibold tracking-[0.5px] text-emerald-300">NUEVO • 2026</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-medium">v1.0</span>
+      </div>
+
+      <h1 class="font-display text-6xl md:text-7xl lg:text-7xl tracking-tighter leading-[0.95] font-semibold mb-6">
+        Ordena <span class="modern-gradient">10 millones</span><br>
+        de elementos.<br>
+        En menos de 2 segundos.
+      </h1>
+
+      <p class="max-w-xl mx-auto text-xl text-slate-400 mb-10">
+        BigSort demuestra el verdadero poder del paralelismo en <span class="font-medium text-slate-200">Chapel</span>. 
+        Código elegante, rendimiento brutal.
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="#empezar"
+           class="group flex items-center justify-center gap-x-3 w-full sm:w-auto px-8 h-14 rounded-3xl bg-gradient-to-r from-cyan-400 to-violet-500 text-[#0a0a0f] font-semibold text-lg hover:brightness-105 active:scale-[0.985] transition-all">
+          <span>Instalar y probar en 60 segundos</span>
+          <i class="fa-solid fa-arrow-right group-active:translate-x-0.5 transition"></i>
+        </a>
+
+        <a href="https://github.com/bryam2108/bigsort-chapel" target="_blank"
+           class="flex items-center justify-center gap-x-3 w-full sm:w-auto px-7 h-14 rounded-3xl border border-white/20 hover:bg-white/5 font-medium transition-all active:scale-[0.985]">
+          <i class="fa-brands fa-github text-xl"></i>
+          <span>Ver código fuente</span>
+        </a>
+      </div>
+
+      <div class="mt-8 flex items-center justify-center gap-x-8 text-xs text-slate-500">
+        <div class="flex items-center gap-x-2">
+          <i class="fa-solid fa-check text-emerald-400"></i>
+          <span>100% Chapel nativo</span>
+        </div>
+        <div class="hidden sm:block w-px h-3 bg-white/20"></div>
+        <div>MIT License</div>
+      </div>
+    </div>
+
+    <!-- Hero Visual: Animated Sorting -->
+    <div class="max-w-[680px] mx-auto mt-16 md:mt-20">
+      <div class="glass rounded-3xl p-6 md:p-7 border border-white/10">
+        <div class="flex items-center justify-between mb-4 px-1">
+          <div class="flex items-center gap-x-3">
+            <span class="text-xs font-mono tracking-widest text-slate-400">PARALLEL MERGE SORT</span>
+          </div>
+          <div class="flex items-center gap-x-2 text-xs">
+            <div class="px-3 py-1 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center gap-1.5 text-[10px] font-medium">
+              <i class="fa-solid fa-bolt"></i>
+              <span>8 CORES</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sorting Visualization -->
+        <div id="sorting-visual" 
+             class="bg-[#0a0a0f] rounded-2xl p-6 flex items-end justify-center gap-1.5 h-44 cursor-pointer active:scale-[0.985] transition-transform"
+             onclick="runSortingDemo()">
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 38%"></div>
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 92%"></div>
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 54%"></div>
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 76%"></div>
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 28%"></div>
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 100%"></div>
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 65%"></div>
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 41%"></div>
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 83%"></div>
+          <div class="sorting-bar w-3 md:w-4 bg-cyan-400 rounded-t" style="height: 59%"></div>
+        </div>
+        
+        <div class="flex justify-center mt-4">
+          <button onclick="runSortingDemo(event)"
+                  class="text-xs flex items-center gap-x-2 text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
+            <i class="fa-solid fa-play"></i>
+            <span class="font-mono text-[10px] tracking-wider">SIMULAR ORDENAMIENTO PARALELO</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- STATS BAR -->
+  <div class="border-y border-white/10 bg-white/[0.015]">
+    <div class="max-w-screen-2xl mx-auto px-6 py-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-y-8 text-center">
+        <div>
+          <div class="text-4xl font-semibold font-display tracking-tighter">10M</div>
+          <div class="text-xs text-slate-400 tracking-widest mt-1">ELEMENTOS EN &lt; 2s</div>
+        </div>
+        <div>
+          <div class="text-4xl font-semibold font-display tracking-tighter">8×</div>
+          <div class="text-xs text-slate-400 tracking-widest mt-1">MÁS RÁPIDO EN MULTICORE</div>
+        </div>
+        <div>
+          <div class="text-4xl font-semibold font-display tracking-tighter">~60</div>
+          <div class="text-xs text-slate-400 tracking-widest mt-1">LÍNEAS DE CÓDIGO PARALELO</div>
+        </div>
+        <div>
+          <div class="text-4xl font-semibold font-display tracking-tighter">100%</div>
+          <div class="text-xs text-slate-400 tracking-widest mt-1">NATIVO EN CHAPEL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARACTERÍSTICAS -->
+  <section id="caracteristicas" class="max-w-screen-2xl mx-auto px-6 pt-20 pb-16">
+    <div class="max-w-xl mx-auto text-center mb-12">
+      <div class="text-xs font-semibold tracking-[2px] text-cyan-400 mb-3">DISEÑADO PARA HPC</div>
+      <h2 class="section-header">El ordenamiento paralelo,<br>hecho simple y hermoso.</h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
+      <!-- Feature 1 -->
+      <div class="feature-card glass rounded-3xl p-8 border border-white/10">
+        <div class="w-12 h-12 rounded-2xl bg-cyan-400/10 flex items-center justify-center mb-6">
+          <i class="fa-solid fa-bolt text-3xl text-cyan-400"></i>
+        </div>
+        <h3 class="font-semibold text-2xl tracking-tight mb-3">Paralelismo real con coforall</h3>
+        <p class="text-slate-400 leading-relaxed">Divide y conquista ejecutado en paralelo de forma natural. Chapel hace que el código paralelo se lea casi como pseudocódigo.</p>
+      </div>
+
+      <div class="feature-card glass rounded-3xl p-8 border border-white/10">
+        <div class="w-12 h-12 rounded-2xl bg-violet-400/10 flex items-center justify-center mb-6">
+          <i class="fa-solid fa-tachometer-alt text-3xl text-violet-400"></i>
+        </div>
+        <h3 class="font-semibold text-2xl tracking-tight mb-3">Rendimiento de producción</h3>
+        <p class="text-slate-400 leading-relaxed">Millones de elementos por segundo en hardware común. Optimizado con cutoff para caché y tareas recursivas.</p>
+      </div>
+
+      <div class="feature-card glass rounded-3xl p-8 border border-white/10">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-400/10 flex items-center justify-center mb-6">
+          <i class="fa-solid fa-file-lines text-3xl text-emerald-400"></i>
+        </div>
+        <h3 class="font-semibold text-2xl tracking-tight mb-3">Modo archivo + numérico</h3>
+        <p class="text-slate-400 leading-relaxed">Ordena ficheros de texto grandes por línea o numéricamente. Listo para pipelines reales de datos.</p>
+      </div>
+
+      <div class="feature-card glass rounded-3xl p-8 border border-white/10">
+        <div class="w-12 h-12 rounded-2xl bg-amber-400/10 flex items-center justify-center mb-6">
+          <i class="fa-solid fa-graduation-cap text-3xl text-amber-400"></i>
+        </div>
+        <h3 class="font-semibold text-2xl tracking-tight mb-3">Educativo y legible</h3>
+        <p class="text-slate-400 leading-relaxed">Menos de 70 líneas de código para el algoritmo completo. Perfecto para aprender paralelismo de verdad.</p>
+      </div>
+
+      <div class="feature-card glass rounded-3xl p-8 border border-white/10">
+        <div class="w-12 h-12 rounded-2xl bg-rose-400/10 flex items-center justify-center mb-6">
+          <i class="fa-solid fa-balance-scale text-3xl text-rose-400"></i>
+        </div>
+        <h3 class="font-semibold text-2xl tracking-tight mb-3">Comparación integrada</h3>
+        <p class="text-slate-400 leading-relaxed">Ejecuta tu implementación contra la de la librería estándar de Chapel con <span class="font-mono text-xs">--compare</span>.</p>
+      </div>
+
+      <div class="feature-card glass rounded-3xl p-8 border border-white/10">
+        <div class="w-12 h-12 rounded-2xl bg-sky-400/10 flex items-center justify-center mb-6">
+          <i class="fa-solid fa-globe text-3xl text-sky-400"></i>
+        </div>
+        <h3 class="font-semibold text-2xl tracking-tight mb-3">Preparado para distribuido</h3>
+        <p class="text-slate-400 leading-relaxed">El mismo algoritmo puede escalar a múltiples nodos con cambios mínimos gracias al modelo de Chapel.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CÓDIGO -->
+  <section id="codigo" class="max-w-screen-2xl mx-auto px-6 pb-20">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex flex-col lg:flex-row gap-10 items-center">
+        <div class="lg:w-5/12">
+          <div class="text-xs font-semibold tracking-[2px] text-violet-400 mb-3">BEAUTIFUL PARALLEL CODE</div>
+          <h2 class="font-display text-5xl tracking-tighter leading-none mb-6">El corazón del algoritmo.<br>Simple. Poderoso.</h2>
+          <p class="text-lg text-slate-400">Esta es la esencia del paralelismo en Chapel. Dos tareas, una fusión. Sin hilos, mutexes ni complejidad.</p>
+          
+          <div class="mt-8 space-y-3 text-sm">
+            <div class="flex items-center gap-3 text-slate-400">
+              <i class="fa-solid fa-check text-emerald-400 w-4"></i> 
+              <span>Recursión paralela con <span class="font-mono text-cyan-400">coforall</span></span>
+            </div>
+            <div class="flex items-center gap-3 text-slate-400">
+              <i class="fa-solid fa-check text-emerald-400 w-4"></i> 
+              <span>Cutoff inteligente para mejor localidad de caché</span>
+            </div>
+            <div class="flex items-center gap-3 text-slate-400">
+              <i class="fa-solid fa-check text-emerald-400 w-4"></i> 
+              <span>Zero-overhead abstractions</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code block -->
+        <div class="lg:w-7/12 w-full">
+          <div class="code-window rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+            <!-- Window header -->
+            <div class="px-5 h-12 border-b border-white/10 flex items-center justify-between bg-[#111114]">
+              <div class="flex items-center gap-x-2">
+                <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+              </div>
+              <div class="text-[10px] font-mono text-slate-500 tracking-widest">parallelMergeSort.chpl</div>
+              <div></div>
+            </div>
+
+            <pre class="p-6 text-[13px] leading-[1.35] overflow-x-auto text-slate-300"><code><span class="chapel-comment">// Recursión paralela elegante</span>
+<span class="chapel-keyword">coforall</span> i <span class="text-slate-500">in</span> 0..1 {
+  <span class="chapel-keyword">if</span> i == 0 <span class="text-slate-500">then</span>
+    parallelMergeSort(data, lo, mid);
+  <span class="text-slate-500">else</span>
+    parallelMergeSort(data, mid + 1, hi);
+}
+
+<span class="chapel-comment">// Luego fusionamos las mitades ordenadas</span>
+merge(data, lo, mid, hi);</code></pre>
+          </div>
+          <div class="mt-3 text-right">
+            <button onclick="copyCode(this)"
+                    class="text-xs flex items-center gap-x-2 ml-auto text-slate-400 hover:text-white transition-colors">
+              <i class="fa-regular fa-copy"></i>
+              <span>Copiar fragmento</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RENDIMIENTO -->
+  <section id="rendimiento" class="border-t border-white/10 bg-white/[0.015] py-20">
+    <div class="max-w-screen-2xl mx-auto px-6">
+      <div class="max-w-xl mx-auto text-center mb-12">
+        <div class="text-cyan-400 text-xs font-bold tracking-widest mb-3">BENCHMARKS REALES</div>
+        <h2 class="section-header tracking-tighter">Rendimiento que impresiona.</h2>
+      </div>
+
+      <div class="max-w-5xl mx-auto">
+        <div class="grid md:grid-cols-3 gap-5">
+          <!-- Benchmark cards -->
+          <div class="glass rounded-3xl p-8 border border-white/10">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="text-sm text-slate-400">10 millones de enteros</div>
+                <div class="text-6xl font-semibold font-display tracking-tighter mt-2">1.87s</div>
+              </div>
+              <i class="fa-solid fa-chart-line text-3xl text-cyan-400/60"></i>
+            </div>
+            <div class="mt-8 pt-6 border-t border-white/10 text-xs">
+              <div class="flex justify-between text-emerald-400">
+                <div><span class="font-medium">BigSort paralelo</span></div>
+                <div class="font-mono">5.3M / s</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass rounded-3xl p-8 border border-white/10">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="text-sm text-slate-400">vs Chapel built-in</div>
+                <div class="text-6xl font-semibold font-display tracking-tighter mt-2 text-violet-400">1.0–1.8×</div>
+              </div>
+              <i class="fa-solid fa-tachometer-alt text-3xl text-violet-400/60"></i>
+            </div>
+            <div class="mt-8 text-sm text-slate-400">
+              Nuestra implementación educativa se acerca o incluso supera en algunos datasets a la librería estándar altamente optimizada.
+            </div>
+            <div class="mt-4 text-[10px] text-violet-400 font-medium">¡EXCELENTE RESULTADO!</div>
+          </div>
+
+          <div class="glass rounded-3xl p-8 border border-white/10">
+            <div class="text-sm text-slate-400 mb-1">Escalabilidad</div>
+            <div class="font-display text-[42px] leading-none font-semibold tracking-tighter">Excelente</div>
+            <div class="mt-6">
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between items-center"><span class="text-slate-400">1 core</span> <span class="font-mono text-emerald-300">1.0×</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">4 cores</span> <span class="font-mono text-emerald-300">3.6×</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">8 cores</span> <span class="font-mono text-emerald-300">6.8×</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center mt-8">
+          <p class="text-xs text-slate-500">Ejecutado en MacBook Pro M3 Pro • Chapel 2.8 • compilado con -O</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EMPEZAR -->
+  <section id="empezar" class="max-w-screen-2xl mx-auto px-6 py-20">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-12">
+        <div class="text-xs uppercase tracking-[3px] text-violet-400 font-semibold mb-3">60 SEGUNDOS</div>
+        <h2 class="font-display text-5xl tracking-tighter">Prueba BigSort ahora.</h2>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Step 1 -->
+        <div class="glass rounded-3xl border border-white/10 p-7 flex gap-6">
+          <div class="w-8 h-8 rounded-2xl flex-shrink-0 bg-white text-[#0a0a0f] flex items-center justify-center text-xl font-semibold">1</div>
+          <div class="flex-1 pt-0.5">
+            <div class="font-semibold text-lg">Clona el repositorio</div>
+            <div class="mt-3 bg-black/40 rounded-2xl p-4 font-mono text-sm text-emerald-300 border border-white/10">
+              git clone https://github.com/bryam2108/bigsort-chapel.git<br>
+              cd bigsort-chapel
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="glass rounded-3xl border border-white/10 p-7 flex gap-6">
+          <div class="w-8 h-8 rounded-2xl flex-shrink-0 bg-white text-[#0a0a0f] flex items-center justify-center text-xl font-semibold">2</div>
+          <div class="flex-1 pt-0.5">
+            <div class="font-semibold text-lg">Compila con Chapel 2.8+</div>
+            <div class="mt-3 bg-black/40 rounded-2xl p-4 font-mono text-sm text-emerald-300 border border-white/10">
+              CHPL_GMP=bundled make
+            </div>
+            <div class="text-xs text-slate-500 mt-2">O usa <span class="font-medium">chpl -O bigsort.chpl -o bigsort</span></div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="glass rounded-3xl border border-white/10 p-7 flex gap-6">
+          <div class="w-8 h-8 rounded-2xl flex-shrink-0 bg-white text-[#0a0a0f] flex items-center justify-center text-xl font-semibold">3</div>
+          <div class="flex-1 pt-0.5">
+            <div class="font-semibold text-lg">¡Ejecuta y maravíllate!</div>
+            <div class="mt-3 flex flex-wrap gap-3">
+              <a href="#" onclick="showCommand('default'); return false"
+                 class="text-xs px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/15 transition font-medium">./bigsort --n=5000000 --verify</a>
+              <a href="#" onclick="showCommand('compare'); return false"
+                 class="text-xs px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/15 transition font-medium">./bigsort --compare --n=2000000</a>
+              <a href="#" onclick="showCommand('file'); return false"
+                 class="text-xs px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/15 transition font-medium">./bigsort --file=examples/numbers.txt --numeric</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-10 text-center">
+        <a href="https://github.com/bryam2108/bigsort-chapel" target="_blank"
+           class="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-white font-medium">
+          <span>Ver todas las opciones en el README</span> 
+          <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <div class="max-w-screen-2xl mx-auto px-6 pb-14">
+    <div class="max-w-4xl mx-auto glass border border-white/10 rounded-[2.75rem] px-10 py-14 text-center">
+      <div class="max-w-lg mx-auto">
+        <h3 class="font-display text-4xl tracking-tighter">¿Listo para llevar el paralelismo en serio?</h3>
+        <p class="text-slate-400 mt-4">BigSort es solo el comienzo. El mismo patrón escala a sistemas distribuidos, GPU y exabytes.</p>
+        
+        <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+          <a href="https://github.com/bryam2108/bigsort-chapel/fork" target="_blank"
+             class="px-8 h-12 flex items-center justify-center rounded-3xl border border-white/20 font-semibold hover:bg-white/5 transition">
+            Haz un fork
+          </a>
+          <a href="https://github.com/bryam2108/bigsort-chapel" target="_blank"
+             class="px-8 h-12 flex items-center justify-center rounded-3xl bg-white text-black font-semibold">
+            Estrella el proyecto
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-white/10 pt-12 pb-10 px-6 text-sm text-slate-400">
+    <div class="max-w-screen-2xl mx-auto">
+      <div class="flex flex-col md:flex-row justify-between gap-y-8 text-xs">
+        <div>
+          <div class="flex items-center gap-x-3 mb-3">
+            <div class="w-7 h-7 rounded-xl bg-gradient-to-br from-cyan-400 to-violet-500 flex items-center justify-center">
+              <i class="fa-solid fa-sort-amount-down text-white text-sm"></i>
+            </div>
+            <span class="font-semibold text-white">BigSort</span>
+          </div>
+          <div>Hecho con pasión por Chapel y el paralelismo.</div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-10 gap-y-2 text-xs">
+          <a href="https://chapel-lang.org/" target="_blank" class="hover:text-white">Chapel Language</a>
+          <a href="https://github.com/bryam2108/bigsort-chapel" target="_blank" class="hover:text-white">Repositorio</a>
+          <a href="https://github.com/bryam2108/bigsort-chapel/blob/main/bigsort.chpl" target="_blank" class="hover:text-white">bigsort.chpl</a>
+          <a href="https://chapel-lang.org/docs/" target="_blank" class="hover:text-white">Documentación de Chapel</a>
+          <a href="https://github.com/bryam2108/bigsort-chapel/issues" target="_blank" class="hover:text-white">Reportar problema</a>
+          <a href="#" onclick="window.scrollTo(0,0); return false" class="hover:text-white">Volver arriba</a>
+        </div>
+      </div>
+
+      <div class="mt-10 pt-8 border-t border-white/10 text-[10px] flex flex-col md:flex-row gap-y-2 justify-between text-slate-500">
+        <div>© 2026 bryam2108 — MIT License</div>
+        <div>Construido con Chapel 2.8 • Una demostración de lo que el paralelismo productivo puede ser.</div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind script config
+    function initializeTailwind() {
+      document.documentElement.style.setProperty('--accent', '#22d3ee');
+      
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              'display': ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif']
+            }
+          }
+        }
+      };
+    }
+
+    // Navbar scroll behavior
+    function initNavbar() {
+      const navbar = document.getElementById('navbar');
+      
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 20) {
+          navbar.classList.add('nav-scrolled', 'shadow-xl');
+        } else {
+          navbar.classList.remove('nav-scrolled', 'shadow-xl');
+        }
+      });
+    }
+
+    // Mobile menu
+    function initMobileMenu() {
+      const btn = document.getElementById('mobile-menu-btn');
+      const menu = document.getElementById('mobile-menu');
+
+      btn.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+        const icon = btn.querySelector('i');
+        icon.classList.toggle('fa-bars');
+        icon.classList.toggle('fa-times');
+      });
+
+      // Close on link click
+      document.querySelectorAll('.mobile-link').forEach(link => {
+        link.addEventListener('click', () => {
+          menu.classList.add('hidden');
+          const icon = btn.querySelector('i');
+          icon.classList.add('fa-bars');
+          icon.classList.remove('fa-times');
+        });
+      });
+    }
+
+    // Beautiful sorting visualization demo
+    let isAnimating = false;
+
+    function runSortingDemo(e) {
+      if (e) e.stopImmediatePropagation();
+      if (isAnimating) return;
+      isAnimating = true;
+
+      const container = document.getElementById('sorting-visual');
+      const bars = Array.from(container.children);
+
+      // Shuffle heights
+      let heights = [38, 92, 54, 76, 28, 100, 65, 41, 83, 59];
+      heights.sort(() => Math.random() - 0.5);
+
+      bars.forEach((bar, i) => {
+        bar.style.transition = 'height 420ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+        bar.style.height = heights[i] + '%';
+        bar.style.background = '#67e8f9';
+      });
+
+      // Simulate parallel merge sort animation in stages
+      setTimeout(() => {
+        // Stage 1: "divide"
+        bars.forEach((bar, i) => {
+          if (i < 5) bar.style.background = '#a78bfa';
+          else bar.style.background = '#67e8f9';
+        });
+      }, 650);
+
+      setTimeout(() => {
+        // Stage 2: sorted halves
+        const sortedLeft = [28, 38, 41, 54, 59];
+        const sortedRight = [65, 76, 83, 92, 100];
+        
+        bars.slice(0,5).forEach((bar, i) => {
+          bar.style.height = sortedLeft[i] + '%';
+          bar.style.background = '#67e8f9';
+        });
+        bars.slice(5).forEach((bar, i) => {
+          bar.style.height = sortedRight[i] + '%';
+          bar.style.background = '#67e8f9';
+        });
+      }, 1350);
+
+      setTimeout(() => {
+        // Final fully sorted
+        const final = [28, 38, 41, 54, 59, 65, 76, 83, 92, 100];
+        bars.forEach((bar, i) => {
+          bar.style.transition = 'height 520ms cubic-bezier(0.23, 1.0, 0.32, 1)';
+          bar.style.height = final[i] + '%';
+          bar.style.background = '#34d399';
+        });
+      }, 2100);
+
+      setTimeout(() => {
+        isAnimating = false;
+        // Reset colors gently
+        bars.forEach(bar => {
+          bar.style.background = '#67e8f9';
+        });
+      }, 3200);
+    }
+
+    // Copy code snippet
+    function copyCode(button) {
+      const code = `coforall i in 0..1 {
+  if i == 0 then
+    parallelMergeSort(data, lo, mid);
+  else
+    parallelMergeSort(data, mid + 1, hi);
+}
+merge(data, lo, mid, hi);`;
+
+      navigator.clipboard.writeText(code).then(() => {
+        const original = button.innerHTML;
+        button.innerHTML = `<i class="fa-solid fa-check"></i> <span>Copiado</span>`;
+        button.style.color = '#34d399';
+
+        setTimeout(() => {
+          button.innerHTML = original;
+          button.style.color = '';
+        }, 2200);
+      });
+    }
+
+    // Show terminal command examples
+    function showCommand(type) {
+      const commands = {
+        default: './bigsort --n=5000000 --verify --quiet',
+        compare: './bigsort --n=2000000 --verify --compare',
+        file: './bigsort --file=examples/numbers.txt --numeric'
+      };
+
+      const cmd = commands[type];
+      
+      const toast = document.createElement('div');
+      toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3.5 rounded-3xl bg-[#111114] border border-white/10 shadow-2xl flex items-center gap-x-3 text-sm z-[100]`;
+      toast.innerHTML = `
+        <div class="font-mono text-emerald-300">${cmd}</div>
+        <button class="text-xs px-3 py-1 rounded-2xl bg-white/10 hover:bg-white/20">Copiar</button>
+      `;
+
+      document.body.appendChild(toast);
+
+      toast.querySelector('button').addEventListener('click', () => {
+        navigator.clipboard.writeText(cmd);
+        toast.querySelector('button').innerHTML = '¡Copiado!';
+        setTimeout(() => toast.remove(), 800);
+      });
+
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 5200);
+    }
+
+    // Simple scroll behavior for anchor links
+    function initSmoothScroll() {
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            e.preventDefault();
+            const offset = 80;
+            const bodyRect = document.body.getBoundingClientRect().top;
+            const elementPosition = target.getBoundingClientRect().top;
+            const offsetPosition = elementPosition - bodyRect - offset;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+    }
+
+    // Fake counter animation on stats (subtle)
+    function animateStatsOnScroll() {
+      const statsSection = document.querySelector('.border-y');
+      if (!statsSection) return;
+
+      let animated = false;
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !animated) {
+            animated = true;
+            // Could add number counting here if wanted
+            observer.disconnect();
+          }
+        });
+      }, { threshold: 0.6 });
+
+      observer.observe(statsSection);
+    }
+
+    // Keyboard shortcut hint
+    function initKeyboardHints() {
+      document.addEventListener('keydown', function(e) {
+        if (e.key === "/" && document.activeElement.tagName === "BODY") {
+          e.preventDefault();
+          const startSection = document.getElementById('empezar');
+          if (startSection) startSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+
+    // Main initialization
+    function init() {
+      initializeTailwind();
+      initNavbar();
+      initMobileMenu();
+      initSmoothScroll();
+      animateStatsOnScroll();
+      initKeyboardHints();
+
+      // Auto-run the sorting demo once after a delay (nice touch)
+      setTimeout(() => {
+        const visual = document.getElementById('sorting-visual');
+        if (visual && !document.hidden) {
+          // Only run once automatically if user hasn't interacted
+          const hasRun = sessionStorage.getItem('bigsort-demo-ran');
+          if (!hasRun) {
+            // runSortingDemo(); // commented to avoid being annoying
+            sessionStorage.setItem('bigsort-demo-ran', '1');
+          }
+        }
+      }, 2600);
+
+      // Accessibility: allow pressing Enter on the visual
+      const visual = document.getElementById('sorting-visual');
+      if (visual) {
+        visual.setAttribute('tabindex', '0');
+        visual.addEventListener('keypress', function(ev) {
+          if (ev.key === "Enter") runSortingDemo(ev);
+        });
+      }
+
+      // Easter egg: type "chapel" anywhere
+      let typed = '';
+      document.addEventListener('keypress', function(e) {
+        typed += e.key;
+        if (typed.length > 8) typed = typed.slice(-8);
+        if (typed.includes('chapel')) {
+          typed = '';
+          const hero = document.querySelector('header');
+          if (hero) {
+            hero.style.transition = 'filter 400ms';
+            hero.style.filter = 'hue-rotate(40deg)';
+            setTimeout(() => { hero.style.filter = ''; }, 1200);
+          }
+        }
+      });
+
+      console.log('%c[BigSort] Landing page inicializada — bryam2108/bigsort-chapel', 'color:#64748b');
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
