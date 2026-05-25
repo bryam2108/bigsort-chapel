@@ -17,8 +17,6 @@ export CHPL_GMP ?= bundled
 all: bigsort
 
 # --- BigSort (recommended target) ---
-bigs: bigsort
-
 bigsort: bigsort.chpl
 	$(CHPL) $(CHPL_FLAGS) bigsort.chpl -o bigsort
 
